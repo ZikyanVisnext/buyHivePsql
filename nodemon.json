@@ -1,0 +1,5 @@
+{
+  "env": {
+    "MONGODB_URI": "mongodb+srv://zikyanrasheed:ziki06021998@thebuyhive.ryc69f2.mongodb.net/?retryWrites=true&w=majority"
+  }
+}
