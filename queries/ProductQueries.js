@@ -9,7 +9,9 @@ class ProductQueries {
     country,
     usa_stock,
     min_price,
-    max_price
+    max_price,
+    supplier,
+    certificates,
   }) {
     let query = `
     SELECT
@@ -50,19 +52,34 @@ class ProductQueries {
     }
 
     if (country) {
-      query += " AND p.country = $1";
-      values.push(country);
+      const countryList = country.split(",");
+      const placeholders = countryList.map((_, index) => `$${index + 1}`);
+      query += ` AND p.country = ANY(ARRAY[${placeholders}])`;
+      values.push(...countryList);
     }
 
-    if (min_price || max_price) {
-      query += " (price >= $1 OR $1 IS NULL) AND (price <= $2 OR $2 IS NULL)";
+    if (min_price && max_price) {
+      query += " AND p.price BETWEEN $1 AND $2";
       values.push(min_price, max_price);
+    } else if (min_price) {
+      query += " AND p.price >= $1";
+      values.push(min_price);
+    } else if (max_price) {
+      query += " AND p.price <= $1";
+      values.push(max_price);
     }
 
-    // if (max_price) {
-    //   query += " AND p.price <= $1";
-    //   values.push(max_price);
-    // }
+    if (supplier) {
+      const suppliers = supplier.split(",");
+      query += ` AND p.supplier && $${values.length + 1}`;
+      values.push(suppliers);
+    }
+
+    if (certificates) {
+      const certificate = certificates.split(",");
+      query += ` AND p.certificates && $${values.length + 1}`;
+      values.push(certificate);
+    }
 
     if (usa_stock) {
       query += " AND p.usa_stock = $1";
@@ -79,11 +96,9 @@ class ProductQueries {
       query += " ORDER BY p.rating DESC";
     } else if (sort_by === "latest") {
       query += " ORDER BY p.created_at DESC";
+    } else if (sort_by === "default") {
+      query += " ";
     }
-
-    // if(page){
-    //   query +=" LIMIT {itemsPerPage} OFFSET {(page - 1) * itemsPerPage}"
-    // }
 
     return { query, values };
   }
