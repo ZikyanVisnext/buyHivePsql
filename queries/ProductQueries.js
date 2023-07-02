@@ -1,5 +1,7 @@
 class ProductQueries {
-  static getAllProductQuery = "select * from products";
+  static getAllProductQuery() {
+    return "select *,COUNT(*) OVER() AS total_count from products";
+  }
 
   static getProductByCategoryQuery({
     keyword,
@@ -15,6 +17,7 @@ class ProductQueries {
   }) {
     let query = `
     SELECT
+      COUNT(*) OVER() AS total_count,
       p.id,
       p.product_name,
       p.price,
@@ -29,43 +32,45 @@ class ProductQueries {
     FROM
       products p
       INNER JOIN categories c ON p.category_id = c.id
-      LEFT JOIN categories pc ON c.parent_category_id = pc.id
+      LEFT JOIN categories pc ON c.parent_category = pc.id
     WHERE
       1 = 1
   `;
 
+  // put c.parent_category_id on line 32 on office laptop.
+
     const values = [];
 
     if (keyword) {
-      query += " AND p.product_name ILIKE $1";
+      query += ` AND p.product_name ILIKE $${values.length + 1}`;
       values.push(`%${keyword}%`);
     }
 
     if (category) {
-      query += " AND c.category_slug = $1";
+      query += ` AND c.category_slug = $${values.length + 1}`;
       values.push(category);
     }
-
+    
     if (moq) {
-      query += " AND p.moq < $1";
+      query += ` AND p.moq < $${values.length + 1}`;
       values.push(moq);
     }
-
+    
     if (country) {
       const countryList = country.split(",");
-      const placeholders = countryList.map((_, index) => `$${index + 1}`);
+      const placeholders = countryList.map((_, index) => `$${values.length + index + 1}`);
       query += ` AND p.country = ANY(ARRAY[${placeholders}])`;
       values.push(...countryList);
     }
 
     if (min_price && max_price) {
-      query += " AND p.price BETWEEN $1 AND $2";
+      query += ` AND p.price BETWEEN $${values.length+1} AND $${values.length+2}`;
       values.push(min_price, max_price);
     } else if (min_price) {
-      query += " AND p.price >= $1";
+      query += ` AND p.price >= $${values.length + 1}`;
       values.push(min_price);
     } else if (max_price) {
-      query += " AND p.price <= $1";
+      query += ` AND p.price <= $${values.length + 1}`;
       values.push(max_price);
     }
 
@@ -82,7 +87,7 @@ class ProductQueries {
     }
 
     if (usa_stock) {
-      query += " AND p.usa_stock = $1";
+      query += ` AND p.usa_stock = $${values.length + 1}`;
       values.push(usa_stock);
     }
 

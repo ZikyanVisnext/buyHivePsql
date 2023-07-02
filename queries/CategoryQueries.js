@@ -1,5 +1,7 @@
 class CategoryQueries {
-  static getAllCategoryQuery = "select * from categories";
+  static getAllCategoryQuery() {
+    return "select * from categories";
+  }
 }
 
 module.exports = CategoryQueries;
